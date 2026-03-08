@@ -30,6 +30,3 @@ Voici les captures d'écran requises pour ce lab. (Placez vos images dans un dos
 
 ### 9. Health check status dans docker inspect
 ![Health check status](./screenshots/9_health_check_status.png)
-
-### 10. Comparaison de taille d'image (backend avec/sans multi-stage si possible)
-![Comparaison taille image](./screenshots/10_image_size_comparison.png)
