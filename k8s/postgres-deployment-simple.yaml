@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: databaselab
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: databaselab
+  template:
+    metadata:
+      labels:
+        app: databaselab
+    spec:
+      containers:
+        - name: databaselab
+          image: postgres:14
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_DB
+              value: "todo_db"
+            - name: POSTGRES_USER
+              value: "postgres"
+            - name: POSTGRES_PASSWORD
+              value: "postgres123"
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: init-script
+              mountPath: /docker-entrypoint-initdb.d/init.sql
+              subPath: init.sql
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "postgres"]
+            initialDelaySeconds: 5
+      volumes:
+        - name: init-script
+          configMap:
+            name: init-script
+        - name: postgres-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: init-script
+  namespace: default
+data:
+  init.sql: |
+    CREATE TABLE IF NOT EXISTS tasks (
+        id SERIAL PRIMARY KEY,
+        title VARCHAR(255) NOT NULL,
+        description TEXT,
+        status VARCHAR(50) NOT NULL
+    );
+
+    INSERT INTO tasks (title, description, status) VALUES
+    ('Test Task 1', 'Description 1', 'pending'),
+    ('Test Task 2', 'Description 2', 'done');
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: databaselab
+  namespace: default
+spec:
+  selector:
+    app: databaselab
+  ports:
+    - protocol: TCP
+      port: 5432
+      targetPort: 5432

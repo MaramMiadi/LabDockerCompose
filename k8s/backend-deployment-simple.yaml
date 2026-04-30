@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backendlab
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backendlab
+  template:
+    metadata:
+      labels:
+        app: backendlab
+    spec:
+      containers:
+        - name: backendlab
+          image: miadi/my-backend:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: DB_HOST
+              value: "databaselab"
+            - name: DB_PORT
+              value: "5432"
+            - name: DB_NAME
+              value: "todo_db"
+            - name: DB_USER
+              value: "postgres"
+            - name: DB_PASSWORD
+              value: "postgres123"
+            - name: PORT
+              value: "3000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backendlab
+  namespace: default
+spec:
+  selector:
+    app: backendlab
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
