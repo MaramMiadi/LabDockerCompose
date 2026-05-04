@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: backendlab
-          image: miadi/my-backend:latest
+          image: miadi/my-backend:1.2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
