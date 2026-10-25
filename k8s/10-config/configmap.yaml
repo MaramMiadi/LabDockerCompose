@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: task-app-config
+  namespace: task-app
+data:
+  DB_HOST: postgres
+  DB_PORT: "5432"
+  DB_NAME: todo_db
+  PORT: "3000"

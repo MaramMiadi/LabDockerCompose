@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: task-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+        kubernetes.io/hostname: k3s-master
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:14
+          command:
+            - sh
+            - -c
+            - until pg_isready -h postgres -p 5432; do echo "Waiting for PostgreSQL"; sleep 2; done
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+      containers:
+        - name: backend
+          image: docker.io/library/task-backend:v1
+          imagePullPolicy: Never
+          ports:
+            - name: http
+              containerPort: 3000
+          env:
+            - name: PORT
+              value: "3000"
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: task-app-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: task-app-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: task-app-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: postgres-secret
+                  key: POSTGRES_PASSWORD
+          resources:
+            requests:
+              cpu: 100m
+              memory: 96Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            periodSeconds: 5
+            failureThreshold: 24
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: task-app
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+    - name: http
+      port: 3000
+      targetPort: 3000
